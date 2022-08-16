@@ -17,7 +17,8 @@ a2lix_lib.sfCollection = (() => {
         remove: 'Remove'
       },
       afterAdd = null,
-      afterRemove = null
+      afterRemove = null,
+      maxElements = null
     } = config
 
     const collectionsElt = document.querySelectorAll(collectionsSelector)
@@ -31,7 +32,8 @@ a2lix_lib.sfCollection = (() => {
         manageRemoveEntry,
         lang,
         afterAdd,
-        afterRemove
+        afterRemove,
+        maxElements
       )
     })
   }
@@ -41,7 +43,8 @@ a2lix_lib.sfCollection = (() => {
     manageRemoveEntry = false,
     lang,
     afterAdd,
-    afterRemove
+    afterRemove,
+    maxElements
   ) => {
     collectionElt.setAttribute(
       'data-entry-index',
@@ -60,7 +63,8 @@ a2lix_lib.sfCollection = (() => {
         manageRemoveEntry,
         lang,
         afterAdd,
-        afterRemove
+        afterRemove,
+        maxElements
       )
     )
   }
@@ -77,6 +81,7 @@ a2lix_lib.sfCollection = (() => {
       'add',
       `${entryLabelClass}`
     )
+
     collectionElt.appendChild(entryAddLink)
   }
 
@@ -105,7 +110,8 @@ a2lix_lib.sfCollection = (() => {
     manageRemoveEntry,
     lang,
     afterAdd,
-    afterRemove
+    afterRemove,
+    maxElements
   ) => {
     if (!evt.target.hasAttribute('data-entry-action')) {
       return
@@ -118,11 +124,12 @@ a2lix_lib.sfCollection = (() => {
           evt.target,
           manageRemoveEntry,
           lang,
-          afterAdd
+          afterAdd,
+          maxElements
         )
         break
       case 'remove':
-        removeEntry(evt.currentTarget, evt.target, afterRemove)
+        removeEntry(evt.currentTarget, evt.target, afterRemove, maxElements)
         break
     }
   }
@@ -132,7 +139,8 @@ a2lix_lib.sfCollection = (() => {
     entryAddButton,
     manageRemoveEntry,
     lang,
-    afterAdd
+    afterAdd,
+    maxElements
   ) => {
     // Get & update entryIndex
     const entryIndex = collectionElt.getAttribute('data-entry-index')
@@ -158,11 +166,29 @@ a2lix_lib.sfCollection = (() => {
 
     if (afterAdd !== null) afterAdd(collectionElt, templateContent.firstChild)
 
+    // If maxElements is set we want to disable the button when maximum elements are already reach
+    entryAddButton.disabled = maxElements && +entryIndex + 1 === maxElements
+
     entryAddButton.parentElement.insertBefore(templateContent, entryAddButton)
   }
 
-  const removeEntry = (collectionElt, entryRemoveButton, afterRemove) => {
+  const removeEntry = (
+    collectionElt,
+    entryRemoveButton,
+    afterRemove,
+    maxElements
+  ) => {
+    const entryIndex = collectionElt.getAttribute('data-entry-index')
+    collectionElt.setAttribute('data-entry-index', +entryIndex - 1)
+
     entryRemoveButton.parentElement.remove()
+
+    if (+entryIndex - 1 < maxElements) {
+      const btnElements = collectionElt.getElementsByTagName('button')
+      for (let btn of btnElements) {
+        if (btn.dataset.entryAction === 'add') btn.disabled = false
+      }
+    }
 
     if (afterRemove !== null)
       afterRemove(collectionElt, entryRemoveButton.parentElement)
